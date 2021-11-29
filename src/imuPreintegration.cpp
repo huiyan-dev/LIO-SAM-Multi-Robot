@@ -25,6 +25,11 @@ class TransformFusion : public ParamServer
 public:
     std::mutex mtx;
 
+    //fusion subscriber
+    std::string _fusion_topic;
+    ros::Subscriber subFusionTrans;
+    double fusionTrans[6]; //x,y,z,roll,pitch,yaw
+
     ros::Subscriber subImuOdometry;
     ros::Subscriber subLaserOdometry;
 
@@ -47,8 +52,8 @@ public:
         {
             try
             {
-                tfListener.waitForTransform(lidarFrame, baselinkFrame, ros::Time(0), ros::Duration(3.0));
-                tfListener.lookupTransform(lidarFrame, baselinkFrame, ros::Time(0), lidar2Baselink);
+                tfListener.waitForTransform(robot_id + "/" + lidarFrame, robot_id + "/" + baselinkFrame, ros::Time(0), ros::Duration(3.0));
+                tfListener.lookupTransform(robot_id + "/" + lidarFrame, robot_id + "/" + baselinkFrame, ros::Time(0), lidar2Baselink);
             }
             catch (tf::TransformException ex)
             {
@@ -56,11 +61,15 @@ public:
             }
         }
 
-        subLaserOdometry = nh.subscribe<nav_msgs::Odometry>("lio_sam/mapping/odometry", 5, &TransformFusion::lidarOdometryHandler, this, ros::TransportHints().tcpNoDelay());
-        subImuOdometry   = nh.subscribe<nav_msgs::Odometry>(odomTopic+"_incremental",   2000, &TransformFusion::imuOdometryHandler,   this, ros::TransportHints().tcpNoDelay());
+        fusionTrans[0] = 0; fusionTrans[1] = 0; fusionTrans[2] = 0; fusionTrans[3] = 0; fusionTrans[4] = 0; fusionTrans[5] = 0;
+        nh.getParam("/mapfusion/interRobot/sc_topic", _fusion_topic);
+        subFusionTrans   = nh.subscribe<nav_msgs::Odometry>(robot_id + "/" + _fusion_topic + "/trans_map", 2000,&TransformFusion::FusionTransHandler, this, ros::TransportHints().tcpNoDelay());
 
-        pubImuOdometry   = nh.advertise<nav_msgs::Odometry>(odomTopic, 2000);
-        pubImuPath       = nh.advertise<nav_msgs::Path>    ("lio_sam/imu/path", 1);
+        subLaserOdometry = nh.subscribe<nav_msgs::Odometry>(robot_id + "/lio_sam/mapping/odometry", 5, &TransformFusion::lidarOdometryHandler, this, ros::TransportHints().tcpNoDelay());
+        subImuOdometry   = nh.subscribe<nav_msgs::Odometry>(robot_id + "/" + odomTopic+"_incremental",   2000, &TransformFusion::imuOdometryHandler,   this, ros::TransportHints().tcpNoDelay());
+
+        pubImuOdometry   = nh.advertise<nav_msgs::Odometry>(robot_id + "/" + odomTopic, 2000);
+        pubImuPath       = nh.advertise<nav_msgs::Path>    (robot_id + "/lio_sam/imu/path", 1);
     }
 
     Eigen::Affine3f odom2affine(nav_msgs::Odometry odom)
@@ -75,6 +84,25 @@ public:
         return pcl::getTransformation(x, y, z, roll, pitch, yaw);
     }
 
+    void FusionTransHandler(const nav_msgs::Odometry::ConstPtr& odomMsg) {
+        //receive the odometry
+//        std::cout << robot_id << ": receiving messages..." <<std::endl;
+        fusionTrans[0] = odomMsg->pose.pose.position.x;
+        fusionTrans[1] = odomMsg->pose.pose.position.y;
+        fusionTrans[2] = odomMsg->pose.pose.position.z;
+        tf::Quaternion orientation;
+        tf::quaternionMsgToTF(odomMsg->pose.pose.orientation, orientation);
+        tf::Matrix3x3(orientation).getRPY(fusionTrans[3], fusionTrans[4], fusionTrans[5]);
+//        std::cout<<robot_id<<" received tf: ";
+//        std::cout << fusionTrans[0] << " " << fusionTrans[1] << " " << fusionTrans[2] << " " << fusionTrans[3] << " "
+//                  << fusionTrans[4] << " " << fusionTrans[5] << std::endl;
+
+        //tf
+        tf::TransformBroadcaster tfMap2Odom;
+        tf::Transform map_to_odom = tf::Transform(tf::createQuaternionFromRPY(fusionTrans[3], fusionTrans[4], fusionTrans[5]), tf::Vector3(fusionTrans[0], fusionTrans[1], fusionTrans[2]));
+        tfMap2Odom.sendTransform(tf::StampedTransform(map_to_odom, odomMsg->header.stamp, mapFrame, robot_id + "/" + odometryFrame));
+
+    }
     void lidarOdometryHandler(const nav_msgs::Odometry::ConstPtr& odomMsg)
     {
         std::lock_guard<std::mutex> lock(mtx);
@@ -86,10 +114,10 @@ public:
 
     void imuOdometryHandler(const nav_msgs::Odometry::ConstPtr& odomMsg)
     {
-        // static tf
-        static tf::TransformBroadcaster tfMap2Odom;
-        static tf::Transform map_to_odom = tf::Transform(tf::createQuaternionFromRPY(0, 0, 0), tf::Vector3(0, 0, 0));
-        tfMap2Odom.sendTransform(tf::StampedTransform(map_to_odom, odomMsg->header.stamp, mapFrame, odometryFrame));
+        //should not be static tf, if static, they will not change!
+        tf::TransformBroadcaster tfMap2Odom;
+        tf::Transform map_to_odom = tf::Transform(tf::createQuaternionFromRPY(fusionTrans[3], fusionTrans[4], fusionTrans[5]), tf::Vector3(fusionTrans[0], fusionTrans[1], fusionTrans[2]));
+        tfMap2Odom.sendTransform(tf::StampedTransform(map_to_odom, odomMsg->header.stamp, mapFrame, robot_id + "/" + odometryFrame));
 
         std::lock_guard<std::mutex> lock(mtx);
 
@@ -126,7 +154,7 @@ public:
         tf::poseMsgToTF(laserOdometry.pose.pose, tCur);
         if(lidarFrame != baselinkFrame)
             tCur = tCur * lidar2Baselink;
-        tf::StampedTransform odom_2_baselink = tf::StampedTransform(tCur, odomMsg->header.stamp, odometryFrame, baselinkFrame);
+        tf::StampedTransform odom_2_baselink = tf::StampedTransform(tCur, odomMsg->header.stamp, robot_id + "/" + odometryFrame, robot_id + "/" + baselinkFrame);
         tfOdom2BaseLink.sendTransform(odom_2_baselink);
 
         // publish IMU path
@@ -138,15 +166,15 @@ public:
             last_path_time = imuTime;
             geometry_msgs::PoseStamped pose_stamped;
             pose_stamped.header.stamp = imuOdomQueue.back().header.stamp;
-            pose_stamped.header.frame_id = odometryFrame;
+            pose_stamped.header.frame_id = robot_id + "/" + odometryFrame;
             pose_stamped.pose = laserOdometry.pose.pose;
             imuPath.poses.push_back(pose_stamped);
-            while(!imuPath.poses.empty() && imuPath.poses.front().header.stamp.toSec() < lidarOdomTime - 1.0)
+            while(!imuPath.poses.empty() && imuPath.poses.front().header.stamp.toSec() < lidarOdomTime - 0.1)
                 imuPath.poses.erase(imuPath.poses.begin());
             if (pubImuPath.getNumSubscribers() != 0)
             {
                 imuPath.header.stamp = imuOdomQueue.back().header.stamp;
-                imuPath.header.frame_id = odometryFrame;
+                imuPath.header.frame_id = robot_id + "/" + odometryFrame;
                 pubImuPath.publish(imuPath);
             }
         }
@@ -204,10 +232,10 @@ public:
 
     IMUPreintegration()
     {
-        subImu      = nh.subscribe<sensor_msgs::Imu>  (imuTopic,                   2000, &IMUPreintegration::imuHandler,      this, ros::TransportHints().tcpNoDelay());
-        subOdometry = nh.subscribe<nav_msgs::Odometry>("lio_sam/mapping/odometry_incremental", 5,    &IMUPreintegration::odometryHandler, this, ros::TransportHints().tcpNoDelay());
+        subImu      = nh.subscribe<sensor_msgs::Imu>  (robot_id + "/" + imuTopic,                   2000, &IMUPreintegration::imuHandler,      this, ros::TransportHints().tcpNoDelay());
+        subOdometry = nh.subscribe<nav_msgs::Odometry>(robot_id + "/lio_sam/mapping/odometry_incremental", 5,    &IMUPreintegration::odometryHandler, this, ros::TransportHints().tcpNoDelay());
 
-        pubImuOdometry = nh.advertise<nav_msgs::Odometry> (odomTopic+"_incremental", 2000);
+        pubImuOdometry = nh.advertise<nav_msgs::Odometry> (robot_id + "/" + odomTopic+"_incremental", 2000);
 
         boost::shared_ptr<gtsam::PreintegrationParams> p = gtsam::PreintegrationParams::MakeSharedU(imuGravity);
         p->accelerometerCovariance  = gtsam::Matrix33::Identity(3,3) * pow(imuAccNoise, 2); // acc white noise in continuous
@@ -479,8 +507,8 @@ public:
         // publish odometry
         nav_msgs::Odometry odometry;
         odometry.header.stamp = thisImu.header.stamp;
-        odometry.header.frame_id = odometryFrame;
-        odometry.child_frame_id = "odom_imu";
+        odometry.header.frame_id = robot_id + "/" + odometryFrame;
+        odometry.child_frame_id = robot_id + "/" + lidarFrame + "/odom_imu";
 
         // transform imu pose to ldiar
         gtsam::Pose3 imuPose = gtsam::Pose3(currentState.quaternion(), currentState.position());
@@ -507,7 +535,7 @@ public:
 
 int main(int argc, char** argv)
 {
-    ros::init(argc, argv, "roboat_loam");
+    ros::init(argc, argv, "lio_sam");
     
     IMUPreintegration ImuP;
 

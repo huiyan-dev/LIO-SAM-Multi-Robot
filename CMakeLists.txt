@@ -1,8 +1,11 @@
-cmake_minimum_required(VERSION 2.8.3)
+set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+cmake_minimum_required(VERSION 3.5)
 project(lio_sam)
 
 set(CMAKE_BUILD_TYPE "Release")
-set(CMAKE_CXX_FLAGS "-std=c++11")
+set(CMAKE_CXX_FLAGS "-std=c++14")
 set(CMAKE_CXX_FLAGS_RELEASE "-O3 -Wall -g -pthread")
 
 find_package(catkin REQUIRED COMPONENTS
@@ -18,24 +21,20 @@ find_package(catkin REQUIRED COMPONENTS
   geometry_msgs
   nav_msgs
   message_generation
-  visualization_msgs
 )
 
 find_package(OpenMP REQUIRED)
 find_package(PCL REQUIRED QUIET)
 find_package(OpenCV REQUIRED QUIET)
 find_package(GTSAM REQUIRED QUIET)
+find_package(Eigen3 REQUIRED)
+find_package(libnabo REQUIRED)
 
 add_message_files(
   DIRECTORY msg
   FILES
   cloud_info.msg
-)
-
-add_service_files(
-  DIRECTORY srv
-  FILES
-  save_map.srv
+  context_info.msg
 )
 
 generate_messages(
@@ -50,14 +49,13 @@ catkin_package(
   INCLUDE_DIRS include
   DEPENDS PCL GTSAM
 
-  CATKIN_DEPENDS
+  CATKIN_DEPENDS 
   std_msgs
   nav_msgs
   geometry_msgs
   sensor_msgs
-  message_runtime
+  message_runtime 
   message_generation
-  visualization_msgs
 )
 
 # include directories
@@ -65,21 +63,40 @@ include_directories(
 	include
 	${catkin_INCLUDE_DIRS}
 	${PCL_INCLUDE_DIRS}
-  ${OpenCV_INCLUDE_DIRS}
+    ${OpenCV_INCLUDE_DIRS}
 	${GTSAM_INCLUDE_DIR}
+	src/DiSCo-SLAM/third_parties
 )
 
 # link directories
 link_directories(
 	include
 	${PCL_LIBRARY_DIRS}
-  ${OpenCV_LIBRARY_DIRS}
-  ${GTSAM_LIBRARY_DIRS}
+    ${OpenCV_LIBRARY_DIRS}
+    ${GTSAM_LIBRARY_DIRS}
 )
 
 ###########
 ## Build ##
 ###########
+
+#for fushion
+# Maximum Clique Solver
+add_library(fast_max-clique_finder
+	src/DiSCo-SLAM/third_parties/fast_max-clique_finder/src/findClique.h
+	src/DiSCo-SLAM/third_parties/fast_max-clique_finder/src/graphIO.h
+	src/DiSCo-SLAM/third_parties/fast_max-clique_finder/src/findClique.cpp
+	src/DiSCo-SLAM/third_parties/fast_max-clique_finder/src/findCliqueHeu.cpp
+	src/DiSCo-SLAM/third_parties/fast_max-clique_finder/src/utils.cpp
+	src/DiSCo-SLAM/third_parties/fast_max-clique_finder/src/graphIO.cpp
+	)
+target_compile_options(fast_max-clique_finder PRIVATE -w)
+
+add_library(scan_context
+	src/DiSCo-SLAM/third_parties/scanContext/scanContext.h
+	src/DiSCo-SLAM/third_parties/scanContext/scanContext.cpp
+	)
+
 
 # Range Image Projection
 add_executable(${PROJECT_NAME}_imageProjection src/imageProjection.cpp)
@@ -100,3 +117,13 @@ target_link_libraries(${PROJECT_NAME}_mapOptmization ${catkin_LIBRARIES} ${PCL_L
 # IMU Preintegration
 add_executable(${PROJECT_NAME}_imuPreintegration src/imuPreintegration.cpp)
 target_link_libraries(${PROJECT_NAME}_imuPreintegration ${catkin_LIBRARIES} ${PCL_LIBRARIES} ${OpenCV_LIBRARIES} gtsam)
+
+# Map Fushion
+add_executable(${PROJECT_NAME}_mapFusion src/DiSCo-SLAM/mapFusion.cpp)
+add_dependencies(${PROJECT_NAME}_mapFusion ${catkin_EXPORTED_TARGETS}  ${PROJECT_NAME}_generate_messages_cpp)
+target_link_libraries(${PROJECT_NAME}_mapFusion ${catkin_LIBRARIES}
+		${PCL_LIBRARIES} libnabo::nabo
+		gtsam fast_max-clique_finder scan_context)
+
+#catkin_install_python(PROGRAMS scripts/listener.py
+#	DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})

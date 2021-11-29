@@ -39,11 +39,11 @@ public:
 
     FeatureExtraction()
     {
-        subLaserCloudInfo = nh.subscribe<lio_sam::cloud_info>("lio_sam/deskew/cloud_info", 1, &FeatureExtraction::laserCloudInfoHandler, this, ros::TransportHints().tcpNoDelay());
+        subLaserCloudInfo = nh.subscribe<lio_sam::cloud_info>(robot_id + "/lio_sam/deskew/cloud_info", 1, &FeatureExtraction::laserCloudInfoHandler, this, ros::TransportHints().tcpNoDelay());
 
-        pubLaserCloudInfo = nh.advertise<lio_sam::cloud_info> ("lio_sam/feature/cloud_info", 1);
-        pubCornerPoints = nh.advertise<sensor_msgs::PointCloud2>("lio_sam/feature/cloud_corner", 1);
-        pubSurfacePoints = nh.advertise<sensor_msgs::PointCloud2>("lio_sam/feature/cloud_surface", 1);
+        pubLaserCloudInfo = nh.advertise<lio_sam::cloud_info> (robot_id + "/lio_sam/feature/cloud_info", 1);
+        pubCornerPoints = nh.advertise<sensor_msgs::PointCloud2>(robot_id + "/lio_sam/feature/cloud_corner", 1);
+        pubSurfacePoints = nh.advertise<sensor_msgs::PointCloud2>(robot_id + "/lio_sam/feature/cloud_surface", 1);
         
         initializationValue();
     }
@@ -65,7 +65,8 @@ public:
 
     void laserCloudInfoHandler(const lio_sam::cloud_infoConstPtr& msgIn)
     {
-        cloudInfo = *msgIn; // new cloud info
+
+        cloudInfo = *msgIn; // new cloud info//for
         cloudHeader = msgIn->header; // new cloud header
         pcl::fromROSMsg(msgIn->cloud_deskewed, *extractedCloud); // new cloud for extraction
 
@@ -250,8 +251,8 @@ public:
         // free cloud info memory
         freeCloudInfoMemory();
         // save newly extracted features
-        cloudInfo.cloud_corner  = publishCloud(&pubCornerPoints,  cornerCloud,  cloudHeader.stamp, lidarFrame);
-        cloudInfo.cloud_surface = publishCloud(&pubSurfacePoints, surfaceCloud, cloudHeader.stamp, lidarFrame);
+        cloudInfo.cloud_corner  = publishCloud(&pubCornerPoints,  cornerCloud,  cloudHeader.stamp, robot_id + "/" + lidarFrame);
+        cloudInfo.cloud_surface = publishCloud(&pubSurfacePoints, surfaceCloud, cloudHeader.stamp, robot_id + "/" + lidarFrame);
         // publish to mapOptimization
         pubLaserCloudInfo.publish(cloudInfo);
     }

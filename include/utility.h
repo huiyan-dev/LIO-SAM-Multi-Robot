@@ -150,9 +150,14 @@ public:
     float globalMapVisualizationPoseDensity;
     float globalMapVisualizationLeafSize;
 
+    int number_print;
+
     ParamServer()
     {
-        nh.param<std::string>("/robot_id", robot_id, "roboat");
+        ros::NodeHandle n("~");
+        n.param<int>("no", number_print, 100);
+        n.param<std::string>("robot_id", robot_id, "jackal0");
+//        nh.param<std::string>("robot_id", robot_id, "roboat");
 
         nh.param<std::string>("lio_sam/pointCloudTopic", pointCloudTopic, "points_raw");
         nh.param<std::string>("lio_sam/imuTopic", imuTopic, "imu_correct");
