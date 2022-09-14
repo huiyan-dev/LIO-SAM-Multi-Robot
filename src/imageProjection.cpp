@@ -1,5 +1,8 @@
 #include "utility.h"
-#include "lio_sam/cloud_info.h"
+#include "lio_sam_multi_robots/cloud_info.h"
+
+namespace lio_sam = lio_sam_multi_robots;
+
 
 struct VelodynePointXYZIRT
 {

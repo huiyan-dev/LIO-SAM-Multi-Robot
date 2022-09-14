@@ -14,7 +14,7 @@
 #include <visualization_msgs/Marker.h>
 #include <visualization_msgs/MarkerArray.h>
 
-#include <opencv/cv.h>
+#include <opencv2/opencv.hpp>
 
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
@@ -58,6 +58,11 @@ using namespace std;
 typedef pcl::PointXYZI PointType;
 
 enum class SensorType { VELODYNE, OUSTER };
+
+//msg
+//#include "lio_sam_multi_robots/cloud_info.h"
+//#include "lio_sam_multi_robots/context_info.h"
+//namespace lio_sam = lio_sam_multi_robots;
 
 class ParamServer
 {

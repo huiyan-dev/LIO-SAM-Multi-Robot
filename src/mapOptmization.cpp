@@ -1,6 +1,6 @@
 #include "utility.h"
-#include "lio_sam/cloud_info.h"
-#include "lio_sam/context_info.h"
+#include "lio_sam_multi_robots/cloud_info.h"
+#include "lio_sam_multi_robots/context_info.h"
 
 #include <gtsam/geometry/Rot3.h>
 #include <gtsam/geometry/Pose3.h>
@@ -19,6 +19,8 @@
 #include <gtsam/slam/dataset.h>
 
 using namespace gtsam;
+namespace lio_sam = lio_sam_multi_robots;
+
 
 using symbol_shorthand::X; // Pose3 (x,y,z,r,p,y)
 using symbol_shorthand::V; // Vel   (xdot,ydot,zdot)

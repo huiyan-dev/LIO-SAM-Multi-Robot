@@ -2,7 +2,7 @@ set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 cmake_minimum_required(VERSION 3.5)
-project(lio_sam)
+project(lio_sam_multi_robots)
 
 set(CMAKE_BUILD_TYPE "Release")
 set(CMAKE_CXX_FLAGS "-std=c++14")
@@ -122,7 +122,7 @@ target_link_libraries(${PROJECT_NAME}_imuPreintegration ${catkin_LIBRARIES} ${PC
 add_executable(${PROJECT_NAME}_mapFusion src/DiSCo-SLAM/mapFusion.cpp)
 add_dependencies(${PROJECT_NAME}_mapFusion ${catkin_EXPORTED_TARGETS}  ${PROJECT_NAME}_generate_messages_cpp)
 target_link_libraries(${PROJECT_NAME}_mapFusion ${catkin_LIBRARIES}
-		${PCL_LIBRARIES} libnabo::nabo
+		${PCL_LIBRARIES} ${libnabo_LIBRARIES}
 		gtsam fast_max-clique_finder scan_context)
 
 #catkin_install_python(PROGRAMS scripts/listener.py
