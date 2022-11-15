@@ -7,7 +7,10 @@ Panels:
         - /links1/base_link_11
         - /Point Cloud1/Velodyne_01
         - /Point Cloud1/Velodyne_11
+        - /Mapping 01
+        - /Mapping 01/Map (global)_11
         - /Mapping 11
+        - /Mapping 11/Map (global)_11
         - /match cloud1
         - /target cloud1
         - /Mapping 21
@@ -352,7 +355,7 @@ Visualization Manager:
           Color: 255; 255; 255
           Color Transformer: AxisColor
           Decay Time: 0
-          Enabled: false
+          Enabled: true
           Invert Rainbow: false
           Max Color: 255; 255; 255
           Min Color: 0; 0; 0
@@ -367,7 +370,7 @@ Visualization Manager:
           Unreliable: false
           Use Fixed Frame: true
           Use rainbow: true
-          Value: false
+          Value: true
         - Alpha: 1
           Autocompute Intensity Bounds: true
           Autocompute Value Bounds:
@@ -432,7 +435,7 @@ Visualization Manager:
           Color: 255; 255; 255
           Color Transformer: Intensity
           Decay Time: 0
-          Enabled: true
+          Enabled: false
           Invert Rainbow: false
           Max Color: 255; 255; 255
           Min Color: 0; 0; 0
@@ -447,7 +450,7 @@ Visualization Manager:
           Unreliable: false
           Use Fixed Frame: true
           Use rainbow: true
-          Value: true
+          Value: false
       Enabled: true
       Name: Mapping 0
     - Class: rviz/Group
@@ -472,7 +475,7 @@ Visualization Manager:
           Position Transformer: XYZ
           Queue Size: 10
           Selectable: true
-          Size (Pixels): 1
+          Size (Pixels): 2
           Size (m): 0.009999999776482582
           Style: Points
           Topic: /jackal1/lio_sam/mapping/map_global
@@ -606,7 +609,7 @@ Visualization Manager:
       Position Transformer: XYZ
       Queue Size: 10
       Selectable: true
-      Size (Pixels): 3
+      Size (Pixels): 1
       Size (m): 0.009999999776482582
       Style: Points
       Topic: /jackal2/context/tmp_match_cloud
@@ -634,7 +637,7 @@ Visualization Manager:
       Position Transformer: XYZ
       Queue Size: 10
       Selectable: true
-      Size (Pixels): 3
+      Size (Pixels): 1
       Size (m): 0.009999999776482582
       Style: Points
       Topic: /jackal2/context/tmp_target_cloud
@@ -794,7 +797,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 958.3529052734375
+      Distance: 512.3139038085938
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
@@ -802,17 +805,17 @@ Visualization Manager:
         Value: false
       Field of View: 0.7853981852531433
       Focal Point:
-        X: 9.040855407714844
-        Y: 0.1054534912109375
-        Z: 0.0223388671875
+        X: 20.426795959472656
+        Y: 80.3630599975586
+        Z: -1.9288309812545776
       Focal Shape Fixed Size: false
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 1.5697963237762451
+      Pitch: -0.28520357608795166
       Target Frame: base_link
-      Yaw: 3.5500736236572266
+      Yaw: 4.615070819854736
     Saved: ~
 Window Geometry:
   Displays:

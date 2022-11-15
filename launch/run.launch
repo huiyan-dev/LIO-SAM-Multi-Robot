@@ -10,8 +10,8 @@
     <rosparam file="$(find lio_sam_multi_robots)/src/DiSCo-SLAM/config/mapfusion.yaml" command="load" />
     
     <!-- Parameters kitti-08 dataset-->
-    <!-- <rosparam file="$(find lio_sam_multi_robots)/config/params_k.yaml" command="load" /> --> -->
-    <!-- <rosparam file="$(find lio_sam_multi_robots)/src/DiSCo-SLAM/config/mapfusion_k.yaml" command="load" /> -->
+<!--     <rosparam file="$(find lio_sam_multi_robots)/config/params_k.yaml" command="load" />  &ndash;&gt;-->
+<!--     <rosparam file="$(find lio_sam_multi_robots)/src/DiSCo-SLAM/config/mapfusion_k.yaml" command="load" />-->
 
     <!--- LOAM robot 0 -->
     <include file="$(find lio_sam_multi_robots)/launch/include/module_loam.launch" >
